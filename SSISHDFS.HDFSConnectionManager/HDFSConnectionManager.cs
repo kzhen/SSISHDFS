@@ -15,27 +15,46 @@ namespace SSISHDFS.HDFSConnectionManager
     public string UserName { get; set; }
     public string Path { get; set; }
 
+    private string connString;
+
     public override DTSExecResult Validate(IDTSInfoEvents infoEvents)
     {
       if (string.IsNullOrWhiteSpace(UserName))
       {
-        return DTSExecResult.Failure;
+        return DTSExecResult.Success;
       }
       if (string.IsNullOrWhiteSpace(Path))
       {
-        return DTSExecResult.Failure;
+        return DTSExecResult.Success;
       }
       if (string.IsNullOrWhiteSpace(ConnectionString))
       {
-        return DTSExecResult.Failure;
+        return DTSExecResult.Success;
       }
 
       return DTSExecResult.Success;
     }
 
+    public override string ConnectionString
+    {
+      get
+      {
+        return connString;
+      }
+      set
+      {
+        connString = value;
+      }
+    }
+
     public override object AcquireConnection(object txn)
     {
-      Uri connectionUri = new Uri(ConnectionString);
+      if (string.IsNullOrWhiteSpace(connString))
+      {
+        connString = "http://192.168.56.101:50070";
+      }
+
+      Uri connectionUri = new Uri(connString);
       WebHDFSClient client = new WebHDFSClient(connectionUri, UserName);
 
       return client;

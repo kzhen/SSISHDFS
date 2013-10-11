@@ -4,6 +4,8 @@ using Microsoft.SqlServer.Dts.Pipeline.Wrapper;
 using Microsoft.SqlServer.Dts.Runtime;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -73,6 +75,8 @@ namespace SSISHDFS.HDFSDestination
 
     public override void PreExecute()
     {
+      Debugger.Launch();
+
       IDTSInput100 input = ComponentMetaData.InputCollection[0];
       IDTSInputColumnCollection100 inputColumns = input.InputColumnCollection;
       IDTSCustomProperty100 custProp;
@@ -89,18 +93,22 @@ namespace SSISHDFS.HDFSDestination
 
     public override void ProcessInput(int inputID, PipelineBuffer buffer)
     {
+      Debugger.Launch();
+
+      client.CreateDirectory("/user/hue/webhdfsclient");
+
       while (buffer.NextRow())
       {
-        string strFileName = buffer.GetString(m_FileNameColumnIndex);
-        int blobLength = (int)buffer.GetBlobLength(m_BlobColumnIndex);
-        byte[] blobData = buffer.GetBlobData(m_BlobColumnIndex, 0, blobLength);
-        string remoteFileName = strFileName;
+        string strFileName = buffer.GetString(0);
+        string strFullFileName = "c:\\temp\\" + buffer.GetString(m_FileNameColumnIndex);
+        //int blobLength = (int)buffer.GetBlobLength(m_BlobColumnIndex);
+        //byte[] blobData = buffer.GetBlobData(m_BlobColumnIndex, 0, blobLength);
+
+        string remoteFileName = "/user/hue/webhdfsclient/" + strFileName;
 
         //strFileName = TranslateFileName(strFileName);
         client.CreateFile(strFileName, remoteFileName).Wait();
-
       }
-
     }
   }
 }
