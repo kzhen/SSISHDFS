@@ -2,18 +2,31 @@
 using Microsoft.SqlServer.Dts.Runtime;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace SSISHDFS.HDFSConnectionManager
 {
-  [DtsConnection(ConnectionType="HDFS", DisplayName="HDFS Connection Manager", 
-    Description="Connection Manager for HDFS")]
+  [DtsConnection(ConnectionType = "HDFS", DisplayName = "HDFS Connection Manager",
+    Description = "Connection Manager for HDFS")]
   public class HDFSConnectionManager : ConnectionManagerBase
   {
+    public override string ConnectionString
+    {
+      get { return String.Format("http://{0}:{1}", Host, Port); }
+      set
+      {
+        Uri uri = new Uri(value);
+        Host = uri.Host;
+        Port = uri.Port;
+      }
+    }
+
     public string UserName { get; set; }
-    public string Path { get; set; }
+    public string Host { get; set; }
+    public int Port { get; set; }
 
     public override DTSExecResult Validate(IDTSInfoEvents infoEvents)
     {
@@ -21,7 +34,11 @@ namespace SSISHDFS.HDFSConnectionManager
       {
         return DTSExecResult.Failure;
       }
-      if (string.IsNullOrWhiteSpace(Path))
+      if (string.IsNullOrWhiteSpace(Host))
+      {
+        return DTSExecResult.Failure;
+      }
+      if (Port <= 0)
       {
         return DTSExecResult.Failure;
       }
@@ -35,6 +52,11 @@ namespace SSISHDFS.HDFSConnectionManager
 
     public override object AcquireConnection(object txn)
     {
+
+#if DEBUG
+      Debugger.Launch();
+#endif
+
       Uri connectionUri = new Uri(ConnectionString);
       WebHDFSClient client = new WebHDFSClient(connectionUri, UserName);
 
