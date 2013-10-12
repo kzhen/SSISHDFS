@@ -12,32 +12,58 @@ using System.Threading.Tasks;
 
 namespace SSISHDFS.HDFSDestination
 {
-  [DtsPipelineComponent(DisplayName="HDFS Destination", ComponentType = ComponentType.DestinationAdapter,
-    Description="Destination component for HDFS")]
+  [DtsPipelineComponent(DisplayName = "HDFS Destination", ComponentType = ComponentType.DestinationAdapter,
+    UITypeName = "SSISHDFS.HDFSDestination.HDFSDestinationUI, SSISHDFS.HDFSDestination, Version=1.0.0.0, Culture=neutral, PublicKeyToken=a22a06ea3c77d390",
+    Description = "Destination component for HDFS")]
   public class HDFSDestination : PipelineComponent
   {
+    private WebHDFSClient client;
+    private string m_DestDir;
+    private int m_FileNameColumnIndex = -1;
+    private int m_BlobColumnIndex = -1;
+
     public override void ProvideComponentProperties()
     {
+      //clear base implementations
       base.RemoveAllInputsOutputsAndCustomProperties();
-      ComponentMetaData.RuntimeConnectionCollection.RemoveAll();
+      this.ComponentMetaData.RuntimeConnectionCollection.RemoveAll();
+      this.ComponentMetaData.InputCollection.RemoveAll();
+      this.ComponentMetaData.OutputCollection.RemoveAll();
 
+      //add custom properties
+      AddProperty(Constants.HDFS_PATH_PROPERTY, "The path to store the files in HDFS", "/user/hue/somepath", true);
+      AddProperty(Constants.SOURCE_COLUMN_INDEX, "The name of the source column", "", true);
+
+      //add the input into the destination
       IDTSInput100 input = ComponentMetaData.InputCollection.New();
-      input.Name = "Input";
+      input.Name = "HDFS Input";
+      input.Description = "Input for the HDFS Destination";
       input.HasSideEffects = true;
 
       IDTSRuntimeConnection100 connection = ComponentMetaData.RuntimeConnectionCollection.New();
-      connection.Name = "SOMETHING";
-      connection.ConnectionManagerID = "SOMETHING";
+      connection.Name = Constants.HDFS_CONNECTION_MANAGER;
+      connection.Description = "Connection to HDFS";
     }
 
-    private WebHDFSClient client;
+    private void AddProperty(string name, string description, object value, bool supportsExpressions)
+    {
+      IDTSCustomProperty100 customProperty = this.ComponentMetaData.CustomPropertyCollection.New();
+      customProperty.Name = name;
+      customProperty.Description = description;
+      customProperty.Value = value;
+
+      if (supportsExpressions)
+      {
+        customProperty.ExpressionType = DTSCustomPropertyExpressionType.CPET_NOTIFY;
+      }
+    }
 
     public override void AcquireConnections(object transaction)
     {
       if (ComponentMetaData.RuntimeConnectionCollection[0] != null)
       {
         ConnectionManager cm = Microsoft.SqlServer.Dts.Runtime.DtsConvert.GetWrapper(ComponentMetaData.RuntimeConnectionCollection[0].ConnectionManager);
-        //ConnectionManagerAdoNet cmado = cm.InnerObject as ConnectionManagerAdoNet;
+        
         HDFSConnectionManager.HDFSConnectionManager connManager = cm.InnerObject as HDFSConnectionManager.HDFSConnectionManager;
 
         if (connManager != null)
@@ -49,29 +75,17 @@ namespace SSISHDFS.HDFSDestination
 
     public override DTSValidationStatus Validate()
     {
+      if (this.ComponentMetaData.CustomPropertyCollection[Constants.HDFS_PATH_PROPERTY].Value == null || this.ComponentMetaData.CustomPropertyCollection[Constants.HDFS_PATH_PROPERTY].Value == string.Empty)
+      {
+        return DTSValidationStatus.VS_ISBROKEN;
+      }
       return DTSValidationStatus.VS_ISVALID;
     }
 
     public override void ReleaseConnections()
     {
-      
+      this.client = null;
     }
-
-    public override IDTSInputColumn100 SetUsageType(int inputID, IDTSVirtualInput100 virtualInput, int lineageID, DTSUsageType usageType)
-    {
-      IDTSInputColumn100 inputColumn = base.SetUsageType(inputID, virtualInput, lineageID, usageType);
-      IDTSCustomProperty100 custProp;
-
-      custProp = inputColumn.CustomPropertyCollection.New();
-      custProp.Name = "FileName";
-      custProp.Value = string.Empty;
-
-      return inputColumn;
-    }
-
-    private string m_DestDir;
-    private int m_FileNameColumnIndex = -1;
-    private int m_BlobColumnIndex = -1;
 
     public override void PreExecute()
     {
@@ -93,21 +107,21 @@ namespace SSISHDFS.HDFSDestination
 
     public override void ProcessInput(int inputID, PipelineBuffer buffer)
     {
+#if DEBUG
       Debugger.Launch();
+#endif
 
-      client.CreateDirectory("/user/hue/webhdfsclient");
+      int columnIndex = ComponentMetaData.CustomPropertyCollection[Constants.SOURCE_COLUMN_INDEX].Value;
+      string remotePath = ComponentMetaData.CustomPropertyCollection[Constants.HDFS_PATH_PROPERTY].Value;
 
       while (buffer.NextRow())
       {
-        string strFileName = buffer.GetString(0);
-        string strFullFileName = "c:\\temp\\" + buffer.GetString(m_FileNameColumnIndex);
-        //int blobLength = (int)buffer.GetBlobLength(m_BlobColumnIndex);
-        //byte[] blobData = buffer.GetBlobData(m_BlobColumnIndex, 0, blobLength);
+        string strFullFileName = buffer.GetString(columnIndex);
+        string fileName = Path.GetFileName(strFullFileName);
 
-        string remoteFileName = "/user/hue/webhdfsclient/" + strFileName;
+        string remoteFileName = remotePath + "/" + fileName;
 
-        //strFileName = TranslateFileName(strFileName);
-        client.CreateFile(strFileName, remoteFileName).Wait();
+        client.CreateFile(strFullFileName, remoteFileName).Wait();          
       }
     }
   }

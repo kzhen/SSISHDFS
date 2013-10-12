@@ -2,18 +2,31 @@
 using Microsoft.SqlServer.Dts.Runtime;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace SSISHDFS.HDFSConnectionManager
 {
-  [DtsConnection(ConnectionType="HDFS", DisplayName="HDFS Connection Manager", 
-    Description="Connection Manager for HDFS")]
+  [DtsConnection(ConnectionType = "HDFS", DisplayName = "HDFS Connection Manager",
+    Description = "Connection Manager for HDFS")]
   public class HDFSConnectionManager : ConnectionManagerBase
   {
+    public override string ConnectionString
+    {
+      get { return String.Format("http://{0}:{1}", Host, Port); }
+      set
+      {
+        Uri uri = new Uri(value);
+        Host = uri.Host;
+        Port = uri.Port;
+      }
+    }
+
     public string UserName { get; set; }
-    public string Path { get; set; }
+    public string Host { get; set; }
+    public int Port { get; set; }
 
     private string connString;
 
@@ -23,7 +36,11 @@ namespace SSISHDFS.HDFSConnectionManager
       {
         return DTSExecResult.Success;
       }
-      if (string.IsNullOrWhiteSpace(Path))
+      if (string.IsNullOrWhiteSpace(Host))
+      {
+        return DTSExecResult.Failure;
+      }
+      if (Port <= 0)
       {
         return DTSExecResult.Success;
       }
@@ -35,26 +52,13 @@ namespace SSISHDFS.HDFSConnectionManager
       return DTSExecResult.Success;
     }
 
-    public override string ConnectionString
-    {
-      get
-      {
-        return connString;
-      }
-      set
-      {
-        connString = value;
-      }
-    }
-
     public override object AcquireConnection(object txn)
     {
-      if (string.IsNullOrWhiteSpace(connString))
-      {
-        connString = "http://192.168.56.101:50070";
-      }
+#if DEBUG
+      Debugger.Launch();
+#endif
 
-      Uri connectionUri = new Uri(connString);
+      Uri connectionUri = new Uri(ConnectionString);
       WebHDFSClient client = new WebHDFSClient(connectionUri, UserName);
 
       return client;
