@@ -77,6 +77,7 @@ namespace SSISHDFS.HDFSDestination
     {
       if (this.ComponentMetaData.CustomPropertyCollection[Constants.HDFS_PATH_PROPERTY].Value == null || this.ComponentMetaData.CustomPropertyCollection[Constants.HDFS_PATH_PROPERTY].Value == string.Empty)
       {
+        FireEvent(EventType.Error, "HDFSPath is invalid");
         return DTSValidationStatus.VS_ISBROKEN;
       }
       return DTSValidationStatus.VS_ISVALID;
@@ -123,6 +124,34 @@ namespace SSISHDFS.HDFSDestination
 
         client.CreateFile(strFullFileName, remoteFileName).Wait();          
       }
+    }
+
+    private void FireEvent(EventType eventType, string eventDescription)
+    {
+
+      bool cancel = false;
+
+      switch (eventType)
+      {
+        case EventType.Information:
+          this.ComponentMetaData.FireInformation(0, this.ComponentMetaData.Name, eventDescription, string.Empty, 0, ref cancel);
+          break;
+        case EventType.Warning:
+          this.ComponentMetaData.FireWarning(0, this.ComponentMetaData.Name, eventDescription, string.Empty, 0);
+          break;
+        case EventType.Error:
+          this.ComponentMetaData.FireError(0, this.ComponentMetaData.Name, eventDescription, string.Empty, 0, out cancel);
+          break;
+        default:
+          break;
+      }
+    }
+
+    private enum EventType
+    {
+      Information,
+      Warning,
+      Error
     }
   }
 }
