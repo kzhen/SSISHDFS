@@ -34,19 +34,23 @@ namespace SSISHDFS.HDFSConnectionManager
     {
       if (string.IsNullOrWhiteSpace(UserName))
       {
-        return DTSExecResult.Success;
+        infoEvents.FireError(0, "HDFS", "No UserName specified", string.Empty, 0);
+        return DTSExecResult.Failure;
       }
       if (string.IsNullOrWhiteSpace(Host))
       {
+        infoEvents.FireError(0, "HDFS", "No Host specified", string.Empty, 0);
         return DTSExecResult.Failure;
       }
       if (Port <= 0)
       {
-        return DTSExecResult.Success;
+        infoEvents.FireError(0, "HDFS", "No Port specified", string.Empty, 0);
+        return DTSExecResult.Failure;
       }
       if (string.IsNullOrWhiteSpace(ConnectionString))
       {
-        return DTSExecResult.Success;
+        infoEvents.FireError(0, "HDFS", "Invalid ConnectionString", string.Empty, 0);
+        return DTSExecResult.Failure;
       }
 
       return DTSExecResult.Success;
@@ -58,10 +62,17 @@ namespace SSISHDFS.HDFSConnectionManager
       Debugger.Launch();
 #endif
 
-      Uri connectionUri = new Uri(ConnectionString);
-      WebHDFSClient client = new WebHDFSClient(connectionUri, UserName);
+      try
+      {
+        Uri connectionUri = new Uri(ConnectionString);
+        WebHDFSClient client = new WebHDFSClient(connectionUri, UserName);
 
-      return client;
+        return client;
+      }
+      catch (UriFormatException)
+      {
+        throw new Exception("HDFS Connection Manager - Invalid Connection String, check Host and Port");
+      }
     }
 
     public override void ReleaseConnection(object connection)
