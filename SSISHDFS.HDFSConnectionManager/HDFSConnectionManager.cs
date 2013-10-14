@@ -58,9 +58,7 @@ namespace SSISHDFS.HDFSConnectionManager
 
     public override object AcquireConnection(object txn)
     {
-#if DEBUG
-      Debugger.Launch();
-#endif
+      //Debugger.Launch();
 
       try
       {

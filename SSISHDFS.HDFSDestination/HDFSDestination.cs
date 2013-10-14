@@ -90,7 +90,7 @@ namespace SSISHDFS.HDFSDestination
 
     public override void PreExecute()
     {
-      Debugger.Launch();
+      //Debugger.Launch();
 
       IDTSInput100 input = ComponentMetaData.InputCollection[0];
       IDTSInputColumnCollection100 inputColumns = input.InputColumnCollection;
@@ -108,9 +108,7 @@ namespace SSISHDFS.HDFSDestination
 
     public override void ProcessInput(int inputID, PipelineBuffer buffer)
     {
-#if DEBUG
-      Debugger.Launch();
-#endif
+      //Debugger.Launch();
 
       int columnIndex = ComponentMetaData.CustomPropertyCollection[Constants.SOURCE_COLUMN_INDEX].Value;
       string remotePath = ComponentMetaData.CustomPropertyCollection[Constants.HDFS_PATH_PROPERTY].Value;
@@ -128,7 +126,6 @@ namespace SSISHDFS.HDFSDestination
 
     private void FireEvent(EventType eventType, string eventDescription)
     {
-
       bool cancel = false;
 
       switch (eventType)
