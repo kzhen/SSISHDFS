@@ -18,8 +18,6 @@ namespace SSISHDFS.HDFSTask
     private Microsoft.SqlServer.Dts.Runtime.Connections connections;
     private IServiceProvider serviceProvider;
 
-    private string sourceDirectory;
-    private string remoteDirectory;
     private IDtsConnectionService connectionService;
 
     private class ConnectionManagerItem
@@ -68,6 +66,7 @@ namespace SSISHDFS.HDFSTask
         connectionManagerId = hdfsTaskHost.ConnectionManagerId;
         txtRemoteDirectory.Text = hdfsTaskHost.RemoteDirectory;
         txtSourceDirectory.Text = hdfsTaskHost.SourceDirectory;
+        txtFileTypeFilter.Text = hdfsTaskHost.FileTypeFilter;
       }
       
       int diff = 0;
@@ -100,15 +99,13 @@ namespace SSISHDFS.HDFSTask
 
     private void btnOK_Click(object sender, EventArgs e)
     {
-      remoteDirectory = txtRemoteDirectory.Text;
-      sourceDirectory = txtSourceDirectory.Text;
-
       var main = this.taskHost.InnerObject as HDFSTask;
 
       if (main != null)
       {
-        main.RemoteDirectory = remoteDirectory;
-        main.SourceDirectory = sourceDirectory;
+        main.RemoteDirectory = txtRemoteDirectory.Text;
+        main.SourceDirectory = txtSourceDirectory.Text;
+        main.FileTypeFilter = txtFileTypeFilter.Text;
         
         if (cbConnectionList.SelectedItem != null)
         {

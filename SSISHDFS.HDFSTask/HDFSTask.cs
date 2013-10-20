@@ -20,35 +20,52 @@ namespace SSISHDFS.HDFSTask
     public string SourceDirectory { get; set; }
     public string RemoteDirectory { get; set; }
     public string ConnectionManagerName { get; set; }
-
+    public string FileTypeFilter { get; set; }
     public override void InitializeTask(Connections connections, VariableDispenser variableDispenser, IDTSInfoEvents events, IDTSLogging log, EventInfos eventInfos, LogEntryInfos logEntryInfos, ObjectReferenceTracker refTracker)
     {
       base.InitializeTask(connections, variableDispenser, events, log, eventInfos, logEntryInfos, refTracker);
     }
     public override DTSExecResult Validate(Connections connections, VariableDispenser variableDispenser, IDTSComponentEvents componentEvents, IDTSLogging log)
     {
+      bool pass = true;
+
       if (string.IsNullOrWhiteSpace(SourceDirectory))
       {
-        componentEvents.FireError(0, "HDFSTask", "Directoy value not specfied", "", 0);
-        return DTSExecResult.Failure;
+        componentEvents.FireError(0, "HDFSTask", "Source Directoy value not specfied", "", 0);
+        pass = false;
+      }
+      if (string.IsNullOrWhiteSpace(RemoteDirectory))
+      {
+        componentEvents.FireError(0, "HDFSTask", "Remote Directoy value not specfied", "", 0);
+        pass = false;
+      }
+      if (string.IsNullOrWhiteSpace(FileTypeFilter))
+      {
+        componentEvents.FireError(0, "HDFSTask", "No filetype filter specified.", "", 0);
+        pass = false;
       }
 
       try
       {
         var cm = connections[ConnectionManagerName];
-        if ((cm.InnerObject as SSISHDFS.HDFSConnectionManager.HDFSConnectionManager) != null)
-        {
-          return DTSExecResult.Success;
-        }
-        else
+        if ((cm.InnerObject as SSISHDFS.HDFSConnectionManager.HDFSConnectionManager) == null)
         {
           componentEvents.FireError(0, "HDFSTask", "No HDFS Connection Manager specfied", "", 0);
-          return DTSExecResult.Failure;
+          pass = false;
         }
       }
       catch (Exception)
       {
         componentEvents.FireError(0, "HDFSTask", "No HDFS Connection Manager specfied", "", 0);
+        pass = false;
+      }
+
+      if (pass)
+      {
+        return DTSExecResult.Success;
+      }
+      else
+      {
         return DTSExecResult.Failure;
       }
     }
@@ -57,7 +74,7 @@ namespace SSISHDFS.HDFSTask
     {
       Debugger.Launch();
 
-      var filesToTransfer = Directory.GetFiles(SourceDirectory);
+      var filesToTransfer = Directory.GetFiles(SourceDirectory, FileTypeFilter);
       WebHDFSClient client;
 
       if (filesToTransfer.Length == 0)
