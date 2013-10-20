@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Microsoft.SqlServer.Dts.Runtime;
+using Microsoft.SqlServer.Dts.Runtime.Design;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -18,6 +20,7 @@ namespace SSISHDFS.HDFSTask
 
     private string sourceDirectory;
     private string remoteDirectory;
+    private IDtsConnectionService connectionService;
 
     private class ConnectionManagerItem
     {
@@ -42,6 +45,7 @@ namespace SSISHDFS.HDFSTask
       this.taskHost = taskHost;
       this.connections = connections;
       this.serviceProvider = serviceProvider;
+      this.connectionService = serviceProvider.GetService(typeof(IDtsConnectionService)) as IDtsConnectionService;
     }
 
     private void button1_Click(object sender, EventArgs e)
@@ -57,6 +61,14 @@ namespace SSISHDFS.HDFSTask
     private void HDFSTaskUIForm_Load(object sender, EventArgs e)
     {
       var connectionManagerId = string.Empty;
+      var hdfsTaskHost = this.taskHost.InnerObject as HDFSTask;
+
+      if (hdfsTaskHost != null)
+      {
+        connectionManagerId = hdfsTaskHost.ConnectionManagerId;
+        txtRemoteDirectory.Text = hdfsTaskHost.RemoteDirectory;
+        txtSourceDirectory.Text = hdfsTaskHost.SourceDirectory;
+      }
       
       int diff = 0;
 
@@ -114,6 +126,23 @@ namespace SSISHDFS.HDFSTask
     {
       this.DialogResult = System.Windows.Forms.DialogResult.Cancel;
       this.Close();
+    }
+
+    private void btnNew_Click(object sender, EventArgs e)
+    {
+      System.Collections.ArrayList created = connectionService.CreateConnection("HDFS");
+
+      foreach (ConnectionManager cm in created)
+      {
+        var item = new ConnectionManagerItem()
+        {
+          Name = cm.Name,
+          ConnManager = cm.InnerObject as HDFSConnectionManager.HDFSConnectionManager,
+          ID = cm.ID
+        };
+
+        cbConnectionList.Items.Insert(0, item);
+      }
     }
   }
 }
