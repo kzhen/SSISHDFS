@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 namespace SSISHDFS.HDFSConnectionManager
 {
   [DtsConnection(ConnectionType = "HDFS", DisplayName = "HDFS Connection Manager",
+    UITypeName = "SSISHDFS.HDFSConnectionManager.HDFSConnectionManagerUI, SSISHDFS.HDFSConnectionManager, Version=1.0.0.0, Culture=neutral, PublicKeyToken=a22a06ea3c77d390",
     Description = "Connection Manager for HDFS")]
   public class HDFSConnectionManager : ConnectionManagerBase
   {
